@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -14,6 +15,8 @@ import com.google.android.gms.maps.model.LatLng;
  * Created by YS on 2016-03-09.
  */
 public class AddAlram extends AppCompatActivity {
+
+    private static final String TAG = "AddAlram";
 
     // 선택된 지역 정보
     private LatLng departureLocate; // 출발지 위도,경도
@@ -26,6 +29,7 @@ public class AddAlram extends AppCompatActivity {
 
     // 뷰
     private TextView departureNameView;
+    private TextView destinationNameView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,29 +39,49 @@ public class AddAlram extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         departureNameView = (TextView) findViewById(R.id.departureNameView);
+        destinationNameView = (TextView) findViewById(R.id.destinationNameView);
 
-        // 클릭키를 추가할 버튼정의
+        // 출발지 버튼정의
         Button setDeparture = (Button) findViewById(R.id.setDeparture);
         setDeparture.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(AddAlram.this, LocatePicker.class);
                 intent.putExtra("BUTTON_FLAG", "DEPARTURE");
-                startActivity(intent);
+                startActivityForResult(intent, 0);
             }
         });
 
+        // 출발지 버튼정의
+        Button setDestination = (Button) findViewById(R.id.setDestination);
+        setDestination.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(AddAlram.this, LocatePicker.class);
+                intent.putExtra("BUTTON_FLAG", "DESTINATION");
+                startActivityForResult(intent, 0);
+            }
+        });
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
         if(resultCode == RESULT_OK) {
+            Log.d(TAG, ""+resultCode);
             switch (intent.getStringExtra("BUTTON_FLAG")) {
                 case "DEPARTURE":
                     departureLocate = new LatLng(intent.getDoubleExtra("selectedLocateLat", 0.0), intent.getDoubleExtra("selectedLocateLng", 0.0));
                     departurePlaceId = intent.getStringExtra("selectedPlaceId");
                     departureName = intent.getStringExtra("selectedName");
                     departureNameView.setText(departureName);
+                    break;
+
+                case "DESTINATION":
+                    destinationLocate = new LatLng(intent.getDoubleExtra("selectedLocateLat", 0.0), intent.getDoubleExtra("selectedLocateLng", 0.0));
+                    destinationPlaceId = intent.getStringExtra("selectedPlaceId");
+                    destinationName = intent.getStringExtra("selectedName");
+                    destinationNameView.setText(destinationName);
+                    break;
             }
         }
     }

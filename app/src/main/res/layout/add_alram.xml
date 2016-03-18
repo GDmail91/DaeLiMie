@@ -95,7 +95,7 @@
                     android:text="도착지를 입력하세요"
                     android:textSize="20sp"
                     android:textColor="@color/black"
-                    android:id="@+id/destinationName"/>
+                    android:id="@+id/destinationNameView"/>
 
                 <Button
                     android:layout_width="0dp"
