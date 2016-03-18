@@ -19,8 +19,8 @@ import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
 
-    private ListView m_ListView;    // 버튼 리스트 띄우기 위한 뷰
-    private AlramAdapter m_ListAdapter;    // 버튼 리스트 가져올 어댑터
+    private ListView m_ListView;    // 알림 리스트 띄우기 위한 뷰
+    private AlramAdapter m_ListAdapter;    // 알림 리스트 가져올 어댑터
 
 
     @Override
