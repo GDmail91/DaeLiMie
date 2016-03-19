@@ -29,5 +29,5 @@ dependencies {
     compile 'com.sothree.slidinguppanel:library:3.3.0'
     compile 'com.squareup.retrofit2:retrofit:2.0.0-beta4'
     compile 'com.squareup.retrofit2:converter-gson:2.0.0-beta4'
-
+    compile 'com.google.maps.android:android-maps-utils:0.4+'
 }

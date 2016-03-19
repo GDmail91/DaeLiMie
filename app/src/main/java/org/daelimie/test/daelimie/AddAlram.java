@@ -52,7 +52,7 @@ public class AddAlram extends AppCompatActivity {
             }
         });
 
-        // 출발지 버튼정의
+        // 도착지 버튼정의
         Button setDestination = (Button) findViewById(R.id.setDestination);
         setDestination.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -60,6 +60,28 @@ public class AddAlram extends AppCompatActivity {
                 Intent intent = new Intent(AddAlram.this, LocatePicker.class);
                 intent.putExtra("BUTTON_FLAG", "DESTINATION");
                 startActivityForResult(intent, 0);
+            }
+        });
+
+        // 경로추가 버튼정의
+        Button addRouteButton = (Button) findViewById(R.id.addRouteButton);
+        addRouteButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(AddAlram.this, RoutePicker.class);
+                Double depLocateLat = departureLocate.latitude;
+                Double depLocateLng = departureLocate.longitude;
+                Double desLocateLat = destinationLocate.latitude;
+                Double desLocateLng = destinationLocate.longitude;
+                intent.putExtra("departureLocateLat", depLocateLat);
+                intent.putExtra("departureLocateLng", depLocateLng);
+                intent.putExtra("departurePlaceId", departurePlaceId);
+                intent.putExtra("departureName", departureName);
+                intent.putExtra("destinationLocateLat", desLocateLat);
+                intent.putExtra("destinationLocateLng", desLocateLng);
+                intent.putExtra("destinationPlaceId", destinationPlaceId);
+                intent.putExtra("destinationName", destinationName);
+                startActivity(intent);
             }
         });
     }

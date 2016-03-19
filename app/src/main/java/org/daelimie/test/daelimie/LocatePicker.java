@@ -92,8 +92,8 @@ public class LocatePicker extends AppCompatActivity {
             }
         });
 
-        Button addRouteButton = (Button) findViewById(R.id.addRouteButton);
-        addRouteButton.setOnClickListener(new View.OnClickListener() {
+        Button addLocateButton = (Button) findViewById(R.id.addLocateButton);
+        addLocateButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Log.d(TAG, selectedName+" "+selectedPlaceId);
