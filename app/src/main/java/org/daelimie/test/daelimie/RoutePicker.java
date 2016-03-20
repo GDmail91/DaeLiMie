@@ -1,6 +1,7 @@
 package org.daelimie.test.daelimie;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -37,6 +38,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -280,80 +283,48 @@ public class RoutePicker extends AppCompatActivity {
                         // 지도에 그릴 Polyline
                         PolylineOptions polylineOptions = new PolylineOptions();
 
-                        for (int i=0; i<steps.length(); i++) {
+                        for (int i = 0; i < steps.length(); i++) {
                             // 교통편 확인
                             switch (steps.getJSONObject(i).getString("travel_mode")) {
-                                case "WALKING":
+                                case "WALKING": // 걸어갈 경우
+                                    // 도보 길안내 (Google Map 은 길안내가 자세히 안나와있으므로 T Map 이용)
                                     JSONArray walkStep = steps.getJSONObject(i).getJSONArray("steps");
                                     for (int j = 0; j < walkStep.length(); j++) {
                                         List<LatLng> poly = PolyUtil.decode(walkStep.getJSONObject(j).getJSONObject("polyline").getString("points"));
-                                        polylineOptions.add(poly.get(0));
-                                        polylineOptions.add(poly.get(1));
+                                        Log.d(TAG, poly.toString());
 
                                         // T Map 에서 도보 길찾기 정보 가져옴
-                                        JSONObject tmapData = TMapRoute.mTMapRoute.searchRoute(
+                                        TMapRoute.mTMapRoute.searchRoute(
                                                 getString(R.string.T_API_KEY),
                                                 "도보로 걷기", // 시작위치 이름
                                                 poly.get(0),
                                                 steps.getJSONObject(i).getString("html_instructions"), // 목적지 위치 이름
-                                                poly.get(1) );
-
-                                        Log.d(TAG, tmapData.toString());
-                                        JSONArray features = tmapData.getJSONArray("features");
-                                        Log.d(TAG, features.toString());
-
-                                        for (int k = 0; k < features.length(); k++) {
-                                            int index = features.getJSONObject(k).getJSONObject("properties").getInt("index");
-                                            JSONObject geometry = features.getJSONObject(k).getJSONObject("geometry");
-                                            switch (geometry.getString("type")) {
-                                                case "Point":
-                                                    // TODO 마커찍기
-                                                    JSONArray markLocation = geometry.getJSONArray("coordinates");
-                                                    LatLng mark = new LatLng(markLocation.getDouble(0), markLocation.getDouble(1));
-                                                    marker = map.addMarker(new MarkerOptions()
-                                                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.marker))
-                                                            .anchor(0.0f, 1.0f) // Anchors the marker on the bottom left
-                                                            .position(mark)
-                                                            .title(geometry.getJSONObject("properties").getString("name")));
-                                                    isSetMarker = true;
-                                                    marker.showInfoWindow();
-                                                    break;
-                                                case "LineString":
-                                                    // TODO 라인그리기
-                                                    ArrayList<LatLng> walkingPoly = new ArrayList<LatLng>();
-                                                    JSONArray polyLocation = geometry.getJSONArray("coordinates");
-                                                    for (int l=0; l<polyLocation.length(); l++) {
-                                                        double walkLat = polyLocation.getJSONArray(l).getDouble(0);
-                                                        double walkLng = polyLocation.getJSONArray(l).getDouble(1);
-                                                        walkingPoly.add(new LatLng(walkLat, walkLng));
+                                                poly.get(1),
+                                                new MyCallback() { // Data 콜백
+                                                    @Override
+                                                    public void httpProcessing(JSONObject result) {
+                                                        markingMap(result); // 지도에 마크하기
                                                     }
-
-                                                    for (int l=0; l<walkingPoly.size(); l++) {
-                                                        polylineOptions.add(walkingPoly.get(l));
-                                                    }
-
-                                                    map.addPolyline(polylineOptions);
-
-                                                    break;
-                                            }
-
-                                        }
+                                                });
                                     }
                                     break;
-                                case "TRANSIT":
+                                case "TRANSIT": // 교통수단 탈 경우
                                     JSONObject detailTransit = steps.getJSONObject(i).getJSONObject("transit_details");
+                                    // 교통수단 길안내
+                                    List<LatLng> tranPoly = PolyUtil.decode(steps.getJSONObject(i).getJSONObject("polyline").getString("points"));
+                                    for (int j=0; j<tranPoly.size(); j++) {
+                                        Log.d(TAG, tranPoly.toString());
+                                        polylineOptions.add(tranPoly.get(j))
+                                                .width(25)
+                                                .color(Color.BLUE);
+                                    }
+
                                     switch (detailTransit.getJSONObject("line").getJSONObject("vehicle").getString("type")) {
-                                        case "BUS":
-                                            List<LatLng> busPoly = PolyUtil.decode(steps.getJSONObject(i).getJSONObject("polyline").getString("points"));
-                                            Log.d(TAG, busPoly.toString());
-                                            polylineOptions.add(busPoly.get(0));
-                                            polylineOptions.add(busPoly.get(1));
+                                        case "BUS": // 버스인 경우
+                                            // TODO 버스
                                             break;
-                                        case "SUBWAY":
-                                            List<LatLng> subwayPoly = PolyUtil.decode(steps.getJSONObject(i).getJSONObject("polyline").getString("points"));
-                                            Log.d(TAG, subwayPoly.toString());
-                                            polylineOptions.add(subwayPoly.get(0));
-                                            polylineOptions.add(subwayPoly.get(1));
+                                        case "SUBWAY": // 지하철인 경우
+                                            // TODO 지하철
                                             break;
                                     }
                                     break;
@@ -375,6 +346,64 @@ public class RoutePicker extends AppCompatActivity {
                 Log.d(TAG, "아예실패");
             }
         });
+    }
+
+    // 지도에 마크하기
+    protected void markingMap(JSONObject result) {
+        try {
+            JSONObject tmapData = result;
+            JSONArray features = tmapData.getJSONArray("features");
+
+            for (int k = 0; k < features.length(); k++) {
+                int index = features.getJSONObject(k).getJSONObject("properties").getInt("index");
+                JSONObject geometry = features.getJSONObject(k).getJSONObject("geometry");
+                JSONObject properties = features.getJSONObject(k).getJSONObject("properties");
+                switch (geometry.getString("type")) {
+                    case "Point":
+                        // TODO 마커찍기
+                        JSONArray markLocation = geometry.getJSONArray("coordinates");
+                        LatLng mark = new LatLng(markLocation.getDouble(1), markLocation.getDouble(0)); // 위도 경도가 반대로 옴
+                        Log.d(TAG, mark.toString());
+                        try {
+                            marker = map.addMarker(new MarkerOptions()
+                                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.marker))
+                                    .anchor(0.0f, 1.0f) // Anchors the marker on the bottom left
+                                    .position(mark)
+                                    .title(URLDecoder.decode(properties.getString("name"), "UTF-8"))
+                                    .snippet(URLDecoder.decode(properties.getString("description"), "UTF-8")));
+                        } catch (UnsupportedEncodingException e) {
+                            e.printStackTrace();
+                        }
+                        isSetMarker = true;
+                        marker.showInfoWindow();
+                        break;
+                    case "LineString":
+                        // TODO 라인그리기
+                        ArrayList<LatLng> walkingPoly = new ArrayList<LatLng>();
+                        JSONArray polyLocation = geometry.getJSONArray("coordinates");
+                        for (int l=0; l<polyLocation.length(); l++) {
+                            double walkLat = polyLocation.getJSONArray(l).getDouble(1);
+                            double walkLng = polyLocation.getJSONArray(l).getDouble(0);
+                            walkingPoly.add(new LatLng(walkLat, walkLng));
+                        }
+
+                        // 지도에 그릴 Polyline
+                        PolylineOptions polylineOptions = new PolylineOptions();
+                        for (int l=0; l<walkingPoly.size(); l++) {
+                            polylineOptions.add(walkingPoly.get(l))
+                                    .width(25)
+                                    .color(Color.RED);
+                        }
+
+                        map.addPolyline(polylineOptions);
+
+                        break;
+                }
+
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
     }
 
     /******************
